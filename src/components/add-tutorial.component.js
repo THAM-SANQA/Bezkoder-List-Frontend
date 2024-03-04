@@ -45,7 +45,6 @@ class AddTutorial extends Component {
           published: data.published,
 
           submitted: true,
-          
         });
         console.log(data);
       })

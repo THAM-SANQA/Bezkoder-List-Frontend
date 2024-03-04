@@ -1,110 +1,195 @@
 import React, { Component } from "react";
 import { connect } from "react-redux";
-import { createTutorial } from "../actions/tutorials";
+import { updateTutorial, deleteTutorial } from "../actions/tutorials";
+import TutorialDataService from "../services/tutorial.service";
 
-class AddTutorial extends Component {
+class Tutorial extends Component {
   constructor(props) {
     super(props);
     this.onChangeTitle = this.onChangeTitle.bind(this);
     this.onChangeDescription = this.onChangeDescription.bind(this);
-    this.saveTutorial = this.saveTutorial.bind(this);
-    this.newTutorial = this.newTutorial.bind(this);
+    this.getTutorial = this.getTutorial.bind(this);
+    this.updateStatus = this.updateStatus.bind(this);
+    this.updateContent = this.updateContent.bind(this);
+    this.removeTutorial = this.removeTutorial.bind(this);
 
     this.state = {
-      id: null,
-      title: "",
-      description: "",
-      published: false,
-
-      submitted: false,
+      currentTutorial: {
+        id: null,
+        title: "",
+        description: "",
+        published: false,
+      },
+      message: "",
     };
   }
 
+  componentDidMount() {
+    this.getTutorial(this.props.match.params.id);
+  }
+
   onChangeTitle(e) {
-    this.setState({
-      title: e.target.value,
+    const title = e.target.value;
+
+    this.setState(function (prevState) {
+      return {
+        currentTutorial: {
+          ...prevState.currentTutorial,
+          title: title,
+        },
+      };
     });
   }
 
   onChangeDescription(e) {
-    this.setState({
-      description: e.target.value,
-    });
+    const description = e.target.value;
+
+    this.setState((prevState) => ({
+      currentTutorial: {
+        ...prevState.currentTutorial,
+        description: description,
+      },
+    }));
   }
 
-  saveTutorial() {
-    const { title, description } = this.state;
-
-    this.props
-      .createTutorial(title, description)
-      .then((data) => {
+  getTutorial(id) {
+    TutorialDataService.get(id)
+      .then((response) => {
         this.setState({
-          id: data.id,
-          title: data.title,
-          description: data.description,
-          published: data.published,
-
-          submitted: true,
+          currentTutorial: response.data,
         });
-        console.log(data);
+        console.log(response.data);
       })
       .catch((e) => {
         console.log(e);
       });
   }
 
-  newTutorial() {
-    this.setState({
-      id: null,
-      title: "",
-      description: "",
-      published: false,
+  updateStatus(status) {
+    var data = {
+      id: this.state.currentTutorial.id,
+      title: this.state.currentTutorial.title,
+      description: this.state.currentTutorial.description,
+      published: status,
+    };
 
-      submitted: false,
-    });
+    this.props
+      .updateTutorial(this.state.currentTutorial.id, data)
+      .then((reponse) => {
+        console.log(reponse);
+
+        this.setState((prevState) => ({
+          currentTutorial: {
+            ...prevState.currentTutorial,
+            published: status,
+          },
+        }));
+
+        this.setState({ message: "The status was updated successfully!" });
+      })
+      .catch((e) => {
+        console.log(e);
+      });
+  }
+
+  updateContent() {
+    this.props
+      .updateTutorial(this.state.currentTutorial.id, this.state.currentTutorial)
+      .then((reponse) => {
+        console.log(reponse);
+        
+        this.setState({ message: "The tutorial was updated successfully!" });
+      })
+      .catch((e) => {
+        console.log(e);
+      });
+  }
+
+  removeTutorial() {
+    this.props
+      .deleteTutorial(this.state.currentTutorial.id)
+      .then(() => {
+        this.props.history.push("/tutorials");
+      })
+      .catch((e) => {
+        console.log(e);
+      });
   }
 
   render() {
+    const { currentTutorial } = this.state;
+
     return (
-      <div className="submit-form">
-        {this.state.submitted ? (
-          <div>
-            <h4>You submitted successfully!</h4>
-            <button className="btn btn-success" onClick={this.newTutorial}>
-              Add
+      <div>
+        {currentTutorial ? (
+          <div className="edit-form">
+            <h4>Tutorial</h4>
+            <form>
+              <div className="form-group">
+                <label htmlFor="title">Title</label>
+                <input
+                  type="text"
+                  className="form-control"
+                  id="title"
+                  value={currentTutorial.title}
+                  onChange={this.onChangeTitle}
+                />
+              </div>
+              <div className="form-group">
+                <label htmlFor="description">Description</label>
+                <input
+                  type="text"
+                  className="form-control"
+                  id="description"
+                  value={currentTutorial.description}
+                  onChange={this.onChangeDescription}
+                />
+              </div>
+
+              <div className="form-group">
+                <label>
+                  <strong>Status:</strong>
+                </label>
+                {currentTutorial.published ? "Published" : "Pending"}
+              </div>
+            </form>
+
+            {currentTutorial.published ? (
+              <button
+                className="badge badge-primary mr-2"
+                onClick={() => this.updateStatus(false)}
+              >
+                UnPublish
+              </button>
+            ) : (
+              <button
+                className="badge badge-primary mr-2"
+                onClick={() => this.updateStatus(true)}
+              >
+                Publish
+              </button>
+            )}
+
+            <button
+              className="badge badge-danger mr-2"
+              onClick={this.removeTutorial}
+            >
+              Delete
             </button>
+
+            <button
+              type="submit"
+              className="badge badge-success"
+              onClick={this.updateContent}
+            >
+              Update
+            </button>
+            <p>{this.state.message}</p>
           </div>
         ) : (
           <div>
-            <div className="form-group">
-              <label htmlFor="title">Title</label>
-              <input
-                type="text"
-                className="form-control"
-                id="title"
-                required
-                value={this.state.title}
-                onChange={this.onChangeTitle}
-                name="title"
-              />
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="description">Description</label>
-              <input
-                type="text"
-                className="form-control"
-                id="description"
-                required
-                value={this.state.description}
-                onChange={this.onChangeDescription}
-                name="description"
-              />
-            </div>
-
-            <button onClick={this.saveTutorial} className="btn btn-success">
-              Submit
-            </button>
+            <br />
+            <p>Please click on a Tutorial...</p>
           </div>
         )}
       </div>
@@ -112,4 +197,4 @@ class AddTutorial extends Component {
   }
 }
 
-export default connect(null, { createTutorial })(AddTutorial);
+export default connect(null, { updateTutorial, deleteTutorial })(Tutorial);
