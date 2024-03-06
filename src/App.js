@@ -13,7 +13,7 @@ class App extends Component {
       <Router>
         <nav className="navbar navbar-expand navbar-dark bg-dark">
           <Link to={"/tutorials"} className="navbar-brand">
-            bezKoder
+            List Application
           </Link>
           <div className="navbar-nav mr-auto">
             <li className="nav-item">
